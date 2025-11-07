@@ -11,7 +11,7 @@ The easiest way to run the API is using Docker, which packages all dependencies 
 - Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop/))
 - Docker Compose (included with Docker Desktop)
 
-#### Option 1: Using Docker Compose (Recommended)
+#### Using Docker Compose (Recommended)
 
 **Step 1: Navigate to the API directory**
 ```bash
@@ -40,15 +40,152 @@ docker-compose logs -f
 docker-compose down
 ```
 
+Then your server should be ready to use now at port 8000 (localhost:8000)
+
 ---
 
 ## 📋 Features
 
-- **POST /predict**: Accept a transaction and return fraud prediction with probability score
-- **GET /frauds**: Retrieve all transactions previously predicted as fraudulent
-- **DELETE /frauds**: Clear all fraud records (useful for testing)
-- **SQLite database**: Persistent storage for fraudulent transactions
-- **Interactive API docs**: Auto-generated Swagger UI at `/docs`
+### API Endpoints
+- **POST /predict** - Real-time fraud detection with ML model inference
+  - Accepts transaction details (amount, type, account balances)
+  - Returns fraud prediction with probability score (0.0 - 1.0)
+  - Smart routing: Auto-marks low-risk types (PAYMENT, CASH_IN, DEBIT) as non-fraud
+  - ML prediction for high-risk types (CASH_OUT, TRANSFER)
+  - Automatic fraud record persistence for detected frauds
+
+- **GET /frauds** - Retrieve fraud history
+  - Returns all transactions previously flagged as fraudulent
+  - Includes transaction data, fraud probability, and prediction timestamp
+  - Sortable by database ID (auto-increment)
+
+- **DELETE /frauds** - Clear fraud database
+  - Deletes all fraud records from the database
+  - Returns count of deleted records
+  - Useful for testing and maintenance
+
+- **GET /** - API health check
+  - Returns API version and available endpoints
+  - Quick status verification
+
+- **GET /docs** - Interactive API documentation
+  - Auto-generated Swagger UI
+  - Live API testing interface
+  - Schema exploration and examples
+
+### Machine Learning
+- **XGBoost Classifier** - Production-ready fraud detection model
+  - Trained on historical transaction patterns
+  - Binary classification (fraud/legitimate)
+  - Probability scores for risk assessment
+
+### Data Management
+- **SQLite Database** - Lightweight persistent storage
+  - Auto-created on startup
+  - No configuration required
+  - Fraud transaction logging with full payload
+  - Timestamp tracking for audit trails
+
+- **Pydantic Validation** - Request/response data integrity
+  - Type-safe transaction models
+  - Automatic validation with clear error messages
+  - Enum support for transaction types
+  - Optional fields for flexible integration
+
+### Infrastructure
+- **Docker Support** - Containerized deployment
+  - Pre-configured Dockerfile and docker-compose
+  - Consistent environment across development/production
+  - Easy scaling and orchestration
+
+- **Logging System** - Comprehensive request/response tracking
+  - Structured logging with timestamps and severity levels
+  - Request logging (transaction details)
+  - Prediction logging (fraud decisions and probabilities)
+  - Error tracking and debugging support
+
+- **Load Testing Ready** - Performance validation
+  - Locust integration with realistic CSV data
+  - Concurrent user simulation
+  - Performance metrics and bottleneck identification
+
+---
+
+## 📂 Project Structure
+
+```
+3_Model_API/
+├── server.py                           # Main FastAPI application entry point
+├── requirements.txt                    # Python dependencies
+├── README.md                           # This documentation
+├── Dockerfile                          # Docker image configuration
+├── docker-compose.yml                  # Docker Compose orchestration
+├── .dockerignore                       # Docker build exclusions
+│
+├── model_serving/                      # Core application modules
+│   ├── schemas.py                      # Pydantic models (Transaction, Response schemas)
+│   ├── model.py                        # ML model wrapper and inference logic
+│   ├── preprocessing.py                # Feature engineering and transformation
+│   ├── db.py                           # SQLite database operations
+│   └── frauds.db                       # SQLite database (auto-created)
+│
+├── models/                             # Trained ML artifacts
+│   ├── xgb_model.joblib                # Serialized XGBoost model
+│   ├── xgb_model.json                  # XGBoost model metadata
+│   ├── preprocessing_artifacts.joblib  # Feature scaler and metadata
+│   └── train_cols.json                 # Training column order for inference
+│
+└── tests/                              # Testing utilities
+    ├── locustfile.py                   # Load testing script (Locust)
+    └── test.md                         # Test examples and documentation
+```
+
+### Key Files Explained
+
+**`server.py`**
+- FastAPI application initialization
+- API endpoint definitions (predict, frauds, docs)
+- Startup event handlers (DB init, model loading)
+- Request/response logging configuration
+- Business logic for transaction type routing
+
+**`model_serving/schemas.py`**
+- `Transaction` - Input model with validation
+- `PredictionResponse` - Prediction output format
+- `FraudTransaction` - Database record schema
+- `TRANSAC_TYPE` - Transaction type enum
+- OpenAPI examples for documentation
+
+**`model_serving/model.py`**
+- `FraudDetectionModel` class
+- Model loading from joblib artifacts
+- Prediction logic (XGBoost Booster and sklearn interfaces)
+- Error handling and logging
+- No fallback heuristics (model required)
+
+**`model_serving/preprocessing.py`**
+- `transform_transaction()` - Feature engineering pipeline
+- `load_preprocessing_artifacts()` - Load scaler and metadata
+- One-hot encoding for categorical features
+- Feature scaling and column alignment
+- Handles enum values from Pydantic
+
+**`model_serving/db.py`**
+- `init_db()` - Create frauds table
+- `save_fraud_to_db()` - Insert fraud record
+- `get_all_frauds()` - Retrieve all frauds
+- `clear_frauds()` - Delete all records
+
+**`models/` Directory**
+- Generated by the training notebook (`2_Model_Training.ipynb`)
+- Contains all artifacts needed for inference
+- Must be present for model-based predictions
+
+**`tests/locustfile.py`**
+- Load testing configuration
+- CSV data loading from `data/fraud_mock.csv`
+- Realistic transaction payload generation
+- Error logging and debugging hooks
 
 ---
 
@@ -82,16 +219,7 @@ The SQLite database (`frauds.db`) stores fraudulent transactions with the follow
 
 ---
 
-## 🧪 Testing
-
-### Unit Tests
-Run the API test suite:
-```bash
-cd 3_Model_API
-python test_api.py
-```
-
-### Load Testing with Locust
+## Load Testing with Locust
 
 Locust is a scalable load testing tool that simulates concurrent users sending requests to your API.
 
@@ -143,10 +271,5 @@ In the Locust UI, monitor:
 - **Response Time**: 50th, 95th, 99th percentiles
 - **Failures**: Any 4xx/5xx errors
 - **Number of Users**: Current active simulated users
-
-**Healthy API Performance:**
-- 95th percentile response time < 500ms
-- Failure rate < 1%
-- Consistent RPS without degradation
 
 ---
