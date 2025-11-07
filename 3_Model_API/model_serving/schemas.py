@@ -16,13 +16,15 @@ ALLOWED_TRANSAC_TYPES = list(TRANSAC_TYPE.__members__.keys())
 
 class Transaction(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
-    time_ind: str = Field(..., description="Transaction timestamp or time index")
+    # make time_ind optional for clients that don't provide timestamps
+    time_ind: Optional[str] = Field(None, description="Transaction timestamp or time index")
     transac_type: TRANSAC_TYPE = Field(..., description="Transaction type / channel")
     amount: float = Field(..., gt=0, description="Transaction amount")
-    src_acc: str = Field(..., description="Source account identifier")
+    # source / destination accounts are optional for some synthetic/test payloads
+    src_acc: Optional[str] = Field(None, description="Source account identifier")
     src_bal: Optional[float] = Field(None, description="Source account balance before transaction")
     src_new_bal: Optional[float] = Field(None, description="Source account balance after transaction")
-    dst_acc: str = Field(..., description="Destination account identifier")
+    dst_acc: Optional[str] = Field(None, description="Destination account identifier")
     dst_bal: Optional[float] = Field(None, description="Destination account balance before transaction")
     dst_new_bal: Optional[float] = Field(None, description="Destination account balance after transaction")
 

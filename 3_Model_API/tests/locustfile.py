@@ -58,20 +58,54 @@ class PredictUser(HttpUser):
         # pick a random row and send to /predict
         row = random.choice(self.data)
 
-        # Convert empty strings to None and try to cast numeric fields
+        # Convert CSV row to payload matching the API Transaction schema.
+        # Normalize header names (common aliases) and values (enum strings).
         payload = {}
         for k, v in row.items():
-            if v is None or v == "":
-                payload[k] = None
+            key = k.strip()
+            if not key:
                 continue
-            # try to parse numbers
-            try:
-                if "." in v:
-                    payload[k] = float(v)
-                else:
-                    payload[k] = int(v)
-            except Exception:
-                payload[k] = v
+
+            # normalize common header aliases to API field names
+            key_lower = key.lower()
+            if key_lower in ("time", "timestamp"):
+                key = "time_ind"
+            elif key_lower in ("type", "transaction_type"):
+                key = "transac_type"
+            elif key_lower in ("src_account", "src_account_id"):
+                key = "src_acc"
+            elif key_lower in ("dst_account", "dst_account_id"):
+                key = "dst_acc"
+
+            # empty -> None
+            if v is None or v == "":
+                payload[key] = None
+                continue
+
+            # If value looks like an Enum repr e.g. "TRANSAC_TYPE.CASH_IN", take last part
+            if isinstance(v, str) and "." in v and v.split(".")[0].isupper():
+                v = v.split(".")[-1]
+
+            # attempt numeric conversion when appropriate
+            if isinstance(v, str):
+                vs = v.strip()
+            else:
+                vs = v
+
+            if isinstance(vs, str):
+                try:
+                    if "." in vs:
+                        parsed = float(vs)
+                    else:
+                        parsed = int(vs)
+                    payload[key] = parsed
+                    continue
+                except Exception:
+                    # keep as string
+                    payload[key] = vs
+                    continue
+
+            payload[key] = v
 
         headers = {"Content-Type": "application/json"}
         # Use a named endpoint so results aggregate under a single label in Locust
