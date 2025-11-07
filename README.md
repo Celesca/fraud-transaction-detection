@@ -171,6 +171,59 @@ cd 3_Model_API
 
 <img width="773" height="610" alt="kafka_architecture drawio" src="https://github.com/user-attachments/assets/dd7bc13c-97eb-4555-ab72-cc30824391d3" />
 
+This document outlines the system architecture for a high-availability, real-time fraud detection platform. The system is designed to ingest a high volume of financial transactions, score them for fraud using a machine learning model, and provide a dedicated interface for auditors to review and update flagged cases.
+
+The architecture is broken into three primary, interconnected services that operate in parallel:
+
+* Real-Time Fraud Detection System: A low-latency "hot path" that scores every transaction in milliseconds.
+
+* Audit Web App System: A "warm path" for human-in-the-loop review and investigation.
+
+* Offline Model Training System: A "cold path" (batch) that acts as a feedback loop to continuously improve the ML model.
+
+#### 1. Real-Time Fraud Detection System (Hot Path)
+
+This service is responsible for ingesting, processing, and scoring transactions as they happen.
+
+Kafka Transactions: The system's entry point. All financial transactions are streamed to this Kafka topic.
+
+Fraud Detection Service (Consumer Group): A group of FDS (Fraud Detection Service) instances that subscribe to the Kafka topic. Using a Consumer Group allows the service to be horizontally scaled to handle any transaction volume.
+
+Async Log: The FDS instances immediately log all incoming data to the Data Lake / Warehouse. This is an asynchronous "fire-and-forget" operation, ensuring that logging does not add latency to the real-time detection path.
+
+Model Serving Load Balancer: Distributes the prediction workload evenly across the available Model instances. This prevents any single model server from becoming a bottleneck and allows for horizontal scaling of the ML model itself.
+
+Model Endpoints: A pool of Model instances, each serving the same fraud detection model. They receive transaction data and return a fraud score.
+
+Fraud Case DB Primary (Write): If a model flags a transaction ("only fraud"), the FDS writes the case details to this primary database. This database is optimized for high-speed writes to avoid blocking the real-time service.
+
+#### 2. Audit Web App System (Warm Path)
+
+This service provides the user interface for human auditors to review flagged cases.
+
+Auditor (User): The end-user who investigates fraud.
+
+Auditor Dashboard (Web App): The front-end application (e.g., React, Angular, Vue) that the auditor uses.
+
+Auditor Web API: The back-end service that provides data to the dashboard and handles updates from the auditor.
+
+Fraud Case DB Replica (Read): A read-only copy of the primary database. The Auditor Web API connects only to this replica for all read operations (e.g., fetching case lists, searching). This is a critical design choice to ensure that heavy, complex audit queries do not slow down or lock the Primary (Write) database, which is vital for the real-time system. Updates from the auditor (e.g., changing a case status) are sent via the API to the Primary DB.
+
+#### 3. Offline Model Training System (Cold Path)
+
+This service is the feedback loop that retrains and improves the fraud detection model over time.
+
+ML Training Pipeline (Spark Batch): A scheduled batch job (e.g., running nightly) that:
+
+Pulls Historical Data (e.g., "CASH_OUT or TRANSFER" types) from the Data Lake / Warehouse.
+
+Pulls the Ground Truth (the final auditor-verified decisions) from the Fraud Case DB Replica.
+
+Model Registry (MLFlow): The training pipeline pushes the new, improved model version to the Model Registry. This registry versions the models and manages their lifecycle.
+
+Model Deployment: The Model Registry deploys the new model to all active Model instances, replacing the old model with zero downtime for the real-time service.
+
+Model Monitoring: A service that watches the performance (e.g., latency, accuracy, data drift) of the live models by pulling data from the Data Lake.
 
 ## 📝 Additional Resources
 
