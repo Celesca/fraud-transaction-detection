@@ -10,6 +10,10 @@ class TRANSAC_TYPE(str, Enum):
     DEBIT = "DEBIT"
 
 
+# Public list of allowed transaction type strings (used by preprocessing/pandas categories)
+ALLOWED_TRANSAC_TYPES = list(TRANSAC_TYPE.__members__.keys())
+
+
 class Transaction(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
     time_ind: str = Field(..., description="Transaction timestamp or time index")
