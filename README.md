@@ -163,6 +163,10 @@ Navigate to the API folder and follow the detailed setup instructions:
 cd 3_Model_API
 ```
 
+### 4. System Architecture Design
+
+
+
 ## 📝 Additional Resources
 
 - **[API Documentation](3_Model_API/README.md)** - Detailed API setup and usage

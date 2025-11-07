@@ -1,23 +1,46 @@
-# Fraud Detection REST API Service
+# Part 3: Fraud Detection REST API Service
 
 A FastAPI-based REST API service for real-time fraud detection in financial transactions.
 
 
-## 🧪 Testing
+## Installation (with Docker) 🐳
 
-### Unit Tests
-Run the API test suite:
+The easiest way to run the API is using Docker, which packages all dependencies and the application into a container.
+
+#### Prerequisites
+- Docker Desktop installed ([Download here](https://www.docker.com/products/docker-desktop/))
+- Docker Compose (included with Docker Desktop)
+
+#### Option 1: Using Docker Compose (Recommended)
+
+**Step 1: Navigate to the API directory**
 ```bash
 cd 3_Model_API
-python test_api.py
 ```
 
-### Load Testing
-Run Locust to simulate concurrent users:
+**Step 2: Build and start the container**
 ```bash
-cd scb-fraud-detection
-locust -f 3_Model_API/tests/locustfile.py --host=http://localhost:8000
+docker-compose up --build
 ```
+
+The API will be available at http://localhost:8000
+
+To run in detached mode (background):
+```bash
+docker-compose up -d --build
+```
+
+**Step 3: View logs**
+```bash
+docker-compose logs -f
+```
+
+**Step 4: Stop the container**
+```bash
+docker-compose down
+```
+
+---
 
 ## 📋 Features
 
@@ -26,81 +49,6 @@ locust -f 3_Model_API/tests/locustfile.py --host=http://localhost:8000
 - **DELETE /frauds**: Clear all fraud records (useful for testing)
 - **SQLite database**: Persistent storage for fraudulent transactions
 - **Interactive API docs**: Auto-generated Swagger UI at `/docs`
-
----
-
-## 🚀 Setup Instructions
-
-Follow these step-by-step instructions to set up and run the fraud detection API service.
-
-### Prerequisites
-
-- Python 3.11 (recommended) or Python 3.9+
-- pip (Python package installer)
-- Virtual environment (`.venv` already created in project root)
-
----
-
-### Step 1: Activate Virtual Environment
-
-Navigate to the project root directory and activate the virtual environment:
-
-**Windows (Command Prompt):**
-```cmd
-.venv\Scripts\activate.bat
-```
-
-**Windows (PowerShell):**
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-**macOS/Linux:**
-```bash
-source .venv/bin/activate
-```
-
-You should see `(.venv)` prefix in your terminal prompt.
-
----
-
-### Step 2: Install Dependencies
-
-Navigate to the `3_Model_Serving` directory and install required packages:
-
-```cmd
-cd 3_Model_Serving
-pip install -r requirements.txt
-```
-
-Expected output: FastAPI, uvicorn, pydantic, and other dependencies installed successfully.
-
----
-
-### Step 3: Run the API Server
-
-Start the FastAPI development server:
-
-```cmd
-python server.py
-```
-
-Or using uvicorn directly:
-
-```cmd
-uvicorn server:app --reload --host 0.0.0.0 --port 8000
-```
-
-**Expected output:**
-```
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process
-⚠️  Mock model loaded. Replace with actual trained model.
-✅ Database initialized
-📂 Database path: C:\Users\...\3_Model_Serving\frauds.db
-```
-
-The server is now running! 🎉
 
 ---
 
@@ -119,117 +67,6 @@ This opens the **Swagger UI** where you can:
 - Test endpoints directly in the browser
 - See request/response examples
 
-### Option 2: Using cURL (Command Line)
-
-**Test the root endpoint:**
-```cmd
-curl http://localhost:8000/
-```
-
-**Predict fraud for a transaction:**
-```cmd
-curl -X POST "http://localhost:8000/predict" ^
-  -H "Content-Type: application/json" ^
-    -d "{\"time_ind\": \"2025-11-07T10:30:00\", \"src_acc\": \"acc_123\", \"dst_acc\": \"acc_456\", \"amount\": 7500.0}"
-```
-
-**Retrieve all fraudulent transactions:**
-```cmd
-curl http://localhost:8000/frauds
-```
-
-**Clear all fraud records:**
-```cmd
-curl -X DELETE http://localhost:8000/frauds
-```
-
-### Option 3: Using Python `requests` library
-
-```python
-import requests
-
-# Predict endpoint
-transaction = {
-    "time_ind": "2025-11-07T14:20:00",
-    "src_acc": "acc_789",
-    "dst_acc": "acc_999",
-    "amount": 12000.0
-}
-
-response = requests.post("http://localhost:8000/predict", json=transaction)
-print(response.json())
-
-# Get frauds endpoint
-response = requests.get("http://localhost:8000/frauds")
-print(response.json())
-```
-
----
-
-## 🔧 Integrating Your Trained Model
-
-The current implementation uses a **mock model** that flags transactions with `amount > 5000` as fraud.
-
-### To replace with your actual model:
-
-1. **Train and save your model** (e.g., in the `2_Model_Training` directory):
-   ```python
-   import joblib
-   # After training your model (e.g., sklearn, XGBoost, etc.)
-   joblib.dump(model, '3_Model_Serving/fraud_model.pkl')
-   ```
-
-2. **Update the `FraudDetectionModel` class in `server.py`**:
-
-   ```python
-   import joblib
-   import numpy as np
-   
-   class FraudDetectionModel:
-       def __init__(self):
-           # Load your trained model
-           self.model = joblib.load('fraud_model.pkl')
-           print("✅ Trained model loaded successfully")
-       
-       def predict(self, transaction: Transaction) -> tuple[bool, float]:
-           # Extract features
-           features = self._extract_features(transaction)
-           
-           # Get prediction
-           probability = self.model.predict_proba(features)[0][1]
-           is_fraud = probability >= 0.5
-           
-           return is_fraud, probability
-       
-       def _extract_features(self, transaction: Transaction):
-           # Implement your feature engineering pipeline
-           # Example: parse time, encode categoricals, scale, etc.
-           features = [
-               # Extract hour from time_ind
-               # Encode src_acc, dst_acc
-               transaction.amount,
-               # ... other features
-           ]
-           return np.array(features).reshape(1, -1)
-   ```
-
-3. **Update the `Transaction` schema** to include all features your model requires.
-
-4. **Restart the server** and test with real predictions.
-
----
-
-## 📂 Project Structure
-
-```
-3_Model_Serving/
-├── server.py              # Main FastAPI application
-├── requirements.txt       # Python dependencies
-├── README.md             # This file
-├── frauds.db             # SQLite database (auto-created)
-└── fraud_model.pkl       # Your trained model (add this)
-```
-
 ---
 
 ## 📊 Database Schema
@@ -245,72 +82,71 @@ The SQLite database (`frauds.db`) stores fraudulent transactions with the follow
 
 ---
 
-## 🛠️ Advanced Configuration
+## 🧪 Testing
 
-### Change Server Port
-
-Edit `server.py` at the bottom:
-```python
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)  # Changed to 8080
+### Unit Tests
+Run the API test suite:
+```bash
+cd 3_Model_API
+python test_api.py
 ```
 
-### Production Deployment
+### Load Testing with Locust
 
-For production, use a production-grade ASGI server:
+Locust is a scalable load testing tool that simulates concurrent users sending requests to your API.
 
-```cmd
-pip install gunicorn
-gunicorn server:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000
+#### Prerequisites
+Install Locust in your virtual environment:
+```bash
+pip install locust
 ```
 
-### Environment Variables
+#### Running Locust Tests
 
-For sensitive configuration (DB paths, model paths), use environment variables:
-
-```python
-import os
-DB_PATH = os.getenv("DB_PATH", "frauds.db")
-MODEL_PATH = os.getenv("MODEL_PATH", "fraud_model.pkl")
+**Navigate to the project root:**
+```bash
+cd scb-fraud-detection
 ```
 
+**Start Locust with the test file:**
+```bash
+locust -f 3_Model_API/tests/locustfile.py --host=http://localhost:8000
+```
+
+**Open the Locust Web UI:**
+- Open your browser and go to http://localhost:8089
+- You'll see the Locust interface where you can configure:
+  - **Number of users**: Total concurrent users to simulate
+  - **Spawn rate**: How many users to start per second
+  - **Host**: The target API (already set to http://localhost:8000)
+
+**Example Configuration:**
+- Number of users: `100`
+- Spawn rate: `10` (ramps up 10 users/second)
+- Host: `http://localhost:8000`
+
+Click **Start Swarming** to begin the test.
+
+#### Locust Test Details
+
+The `locustfile.py` includes:
+- **CSV Data Loading**: Loads transactions from `data/fraud_mock.csv`
+- **Realistic Payloads**: Sends actual transaction data to `/predict`
+- **Automatic Type Normalization**: Handles transaction type enums correctly
+- **Random Sampling**: Each simulated user picks random transactions
+- **Error Logging**: Logs first 5 payloads and all failed requests for debugging
+
+#### Interpreting Results
+
+In the Locust UI, monitor:
+- **RPS (Requests Per Second)**: Throughput of your API
+- **Response Time**: 50th, 95th, 99th percentiles
+- **Failures**: Any 4xx/5xx errors
+- **Number of Users**: Current active simulated users
+
+**Healthy API Performance:**
+- 95th percentile response time < 500ms
+- Failure rate < 1%
+- Consistent RPS without degradation
+
 ---
-
-## ✅ Troubleshooting
-
-**Issue: Port 8000 already in use**
-- Solution: Change the port in `server.py` or kill the process using port 8000
-
-**Issue: ModuleNotFoundError**
-- Solution: Ensure virtual environment is activated and dependencies are installed
-
-**Issue: Database locked**
-- Solution: Close any other connections to `frauds.db` or delete the file to reset
-
-**Issue: Model file not found**
-- Solution: Ensure your trained model file is in the `3_Model_Serving` directory
-
----
-
-## 📝 Next Steps
-
-1. ✅ Run the server and test with mock predictions
-2. 🔄 Train your fraud detection model (in `2_Model_Training`)
-3. 🔧 Replace the mock model with your trained model
-4. 🧪 Test with realistic transaction data
-5. 🚀 Deploy to production environment
-6. 📊 Monitor fraud predictions and retrain periodically
-
----
-
-## 📞 Support
-
-For issues or questions, refer to:
-- FastAPI documentation: https://fastapi.tiangolo.com/
-- SQLite documentation: https://www.sqlite.org/docs.html
-- Project repository issues
-
----
-
-**Happy fraud detecting! 🚨**
