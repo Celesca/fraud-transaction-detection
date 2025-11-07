@@ -4,11 +4,10 @@ from datetime import datetime
 import os
 import logging
 
-from schemas import Transaction, PredictionResponse, FraudTransaction
-import db
-from model import FraudDetectionModel
-import preprocessing
-
+from model_serving.schemas import Transaction, PredictionResponse, FraudTransaction
+import model_serving.db as db
+from model_serving.model import FraudDetectionModel
+import model_serving.preprocessing as preprocessing
 
 app = FastAPI(
     title="Fraud Detection API",
@@ -79,28 +78,48 @@ async def predict_fraud(transaction: Transaction):
         artifacts = getattr(app.state, "artifacts", None)
         model: FraudDetectionModel = getattr(app.state, "model")
 
-        logger.info("Received transaction for prediction: transaction_id=%s dst_acc=%s amount=%s",
-                    transaction.transaction_id, transaction.dst_acc, transaction.amount)
+        logger.info(
+            "Received transaction for prediction: dst_acc=%s amount=%s",
+            transaction.dst_acc,
+            transaction.amount,
+        )
 
         # Transform incoming transaction to model-ready features (DataFrame)
         features_df = preprocessing.transform_transaction(transaction.dict(), artifacts)
 
-        # Model inference: model.predict accepts DataFrame or dict
-        is_fraud, fraud_probability = model.predict(features_df)
+        # Short-circuit: if the transaction type is not one of the two
+        # high-risk channels we care about (CASH_OUT, TRANSFER), skip the model
+        # and immediately mark as non-fraudulent.
+        try:
+            tt = getattr(transaction, "transac_type", None)
+            if tt is None:
+                tt_val = None
+            else:
+                # handle Enum members
+                tt_val = getattr(tt, "value", None) or str(tt)
+            if isinstance(tt_val, str):
+                tt_val = tt_val.strip().upper()
+        except Exception:
+            tt_val = None
+
+        if tt_val not in ("CASH_OUT", "TRANSFER"):
+            logger.info("Transaction transac_type=%s not high-risk; skipping model (marking not fraud)", tt_val)
+            is_fraud = False
+            fraud_probability = 0.0
+        else:
+            # Model inference: model.predict accepts DataFrame or dict
+            is_fraud, fraud_probability = model.predict(features_df)
 
         prediction_time = datetime.utcnow().isoformat()
 
         # Persist if fraud
         if is_fraud:
             db.save_fraud_to_db(transaction.dict(), fraud_probability, prediction_time)
-            logger.info("Persisted fraud: transaction_id=%s prob=%.4f",
-                        transaction.transaction_id, fraud_probability)
+            logger.info("Persisted fraud record with prob=%.4f", fraud_probability)
 
-        logger.info("Prediction result: transaction_id=%s is_fraud=%s prob=%.4f",
-                    transaction.transaction_id, is_fraud, fraud_probability)
+        logger.info("Prediction result: is_fraud=%s prob=%.4f", is_fraud, fraud_probability)
 
         return PredictionResponse(
-            transaction_id=transaction.transaction_id,
             is_fraud=is_fraud,
             fraud_probability=round(fraud_probability, 4),
             prediction_time=prediction_time,
@@ -132,4 +151,4 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting uvicorn server on 0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)

@@ -1,4 +1,11 @@
 pandas
 matplotlib
+seaborn
+numpy
+umap
 pycaret
 scikit-learn
+xgboost
+imblearn
+joblib
+optuna

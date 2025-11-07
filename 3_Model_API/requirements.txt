@@ -1,0 +1,18 @@
+# FastAPI and web server dependencies
+fastapi
+uvicorn[standard]
+pydantic
+
+# Data processing
+pandas
+numpy
+
+# Model serving
+scikit-learn
+xgboost
+
+# Model serialization
+joblib
+
+# Testing
+locust

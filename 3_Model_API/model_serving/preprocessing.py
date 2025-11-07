@@ -3,6 +3,8 @@ from typing import Dict, Any, Optional
 
 import pandas as pd
 import joblib
+from .schemas import TRANSAC_TYPE, ALLOWED_TRANSAC_TYPES
+from enum import Enum as _Enum
 
 def parse_time_features(time_ind: str) -> Dict[str, Any]:
     try:
@@ -35,10 +37,30 @@ def transform_transaction(transaction: Dict[str, Any], artifacts: Optional[Dict[
     ]
 
     # Build initial df from transaction dict
+    # Normalize transac_type to uppercase and validate
+    tt = transaction.get("transac_type")
+    if tt is not None:
+        # If the incoming value is an Enum member (from Pydantic), extract its value.
+        if isinstance(tt, _Enum):
+            tt_val = tt.value
+        else:
+            tt_val = tt
+
+        tt_norm = str(tt_val).strip().upper()
+        if tt_norm not in TRANSAC_TYPE.__members__:
+            raise ValueError(f"Invalid transac_type '{tt}'; allowed: {list(TRANSAC_TYPE)}")
+        # store the normalized string value so later code can treat it as a category
+        transaction["transac_type"] = tt_norm
+
     row = {k: transaction.get(k, None) for k in relevant_features}
     df = pd.DataFrame([row])
 
-    # One-hot encode transac_type
+    # Ensure transac_type uses the canonical categories so dummies are consistent
+    if "transac_type" in df.columns:
+        # ensure category order matches training
+        df["transac_type"] = pd.Categorical(df["transac_type"], categories=ALLOWED_TRANSAC_TYPES)
+
+    # One-hot encode transac_type (drop_first=True matches training notebook)
     df = pd.get_dummies(df, columns=["transac_type"], drop_first=True)
 
     # Align columns to training columns 
