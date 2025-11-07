@@ -16,7 +16,6 @@ def init_db(db_path: str | None = None) -> None:
         """
         CREATE TABLE IF NOT EXISTS frauds (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transaction_id TEXT,
             transaction_data TEXT,
             fraud_probability REAL,
             prediction_time TEXT
@@ -34,11 +33,10 @@ def save_fraud_to_db(transaction: Dict, probability: float, prediction_time: str
     cursor = conn.cursor()
     cursor.execute(
         """
-        INSERT INTO frauds (transaction_id, transaction_data, fraud_probability, prediction_time)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO frauds (transaction_data, fraud_probability, prediction_time)
+        VALUES (?, ?, ?)
         """,
         (
-            transaction.get("transaction_id"),
             json.dumps(transaction),
             float(probability),
             prediction_time,
@@ -54,7 +52,7 @@ def get_all_frauds(db_path: str | None = None) -> List[Dict]:
     conn = sqlite3.connect(db)
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, transaction_id, transaction_data, fraud_probability, prediction_time FROM frauds"
+        "SELECT id, transaction_data, fraud_probability, prediction_time FROM frauds"
     )
     rows = cursor.fetchall()
     conn.close()
@@ -64,10 +62,9 @@ def get_all_frauds(db_path: str | None = None) -> List[Dict]:
         result.append(
             {
                 "id": row[0],
-                "transaction_id": row[1],
-                "transaction_data": json.loads(row[2]) if row[2] else {},
-                "fraud_probability": row[3],
-                "prediction_time": row[4],
+                "transaction_data": json.loads(row[1]) if row[1] else {},
+                "fraud_probability": row[2],
+                "prediction_time": row[3],
             }
         )
     return result

@@ -15,9 +15,8 @@ ALLOWED_TRANSAC_TYPES = list(TRANSAC_TYPE.__members__.keys())
 
 
 class Transaction(BaseModel):
-    transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
     # make time_ind optional for clients that don't provide timestamps
-    time_ind: Optional[str] = Field(None, description="Transaction timestamp or time index")
+    time_ind: Optional[int] = Field(None, description="Transaction timestamp or time index")
     transac_type: TRANSAC_TYPE = Field(..., description="Transaction type / channel")
     amount: float = Field(..., gt=0, description="Transaction amount")
     # source / destination accounts are optional for some synthetic/test payloads
@@ -30,7 +29,6 @@ class Transaction(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    transaction_id: Optional[str]
     is_fraud: bool = Field(..., description="Fraud prediction (True/False)")
     fraud_probability: float = Field(..., ge=0.0, le=1.0, description="Fraud probability score")
     prediction_time: str = Field(..., description="ISO timestamp of prediction")
@@ -38,7 +36,6 @@ class PredictionResponse(BaseModel):
 
 class FraudTransaction(BaseModel):
     id: int
-    transaction_id: Optional[str]
     transaction_data: Dict
     fraud_probability: float
     prediction_time: str

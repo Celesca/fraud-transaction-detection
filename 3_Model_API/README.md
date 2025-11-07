@@ -113,7 +113,7 @@ curl http://localhost:8000/
 ```cmd
 curl -X POST "http://localhost:8000/predict" ^
   -H "Content-Type: application/json" ^
-  -d "{\"transaction_id\": \"txn_001\", \"time_ind\": \"2025-11-07T10:30:00\", \"src_acc\": \"acc_123\", \"dst_acc\": \"acc_456\", \"amount\": 7500.0}"
+    -d "{\"time_ind\": \"2025-11-07T10:30:00\", \"src_acc\": \"acc_123\", \"dst_acc\": \"acc_456\", \"amount\": 7500.0}"
 ```
 
 **Retrieve all fraudulent transactions:**
@@ -133,7 +133,6 @@ import requests
 
 # Predict endpoint
 transaction = {
-    "transaction_id": "txn_002",
     "time_ind": "2025-11-07T14:20:00",
     "src_acc": "acc_789",
     "dst_acc": "acc_999",
@@ -223,7 +222,6 @@ The SQLite database (`frauds.db`) stores fraudulent transactions with the follow
 | Column             | Type    | Description                              |
 |--------------------|---------|------------------------------------------|
 | id                 | INTEGER | Primary key (auto-increment)             |
-| transaction_id     | TEXT    | Transaction identifier                   |
 | transaction_data   | TEXT    | Full transaction JSON                    |
 | fraud_probability  | REAL    | Fraud probability score (0.0 to 1.0)     |
 | prediction_time    | TEXT    | ISO timestamp of prediction              |

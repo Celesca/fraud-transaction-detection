@@ -4,6 +4,8 @@ import os
 import random
 import json
 from typing import List, Dict
+import logging
+from threading import Lock
 
 
 CSV_PATH = os.environ.get(
@@ -40,6 +42,19 @@ class PredictUser(HttpUser):
 
     # Load the CSV once per worker process
     data: List[Dict] = []
+    # simple counter to allow printing the first few payloads for debugging
+    _print_lock = Lock()
+    _sent_counter: int = 0
+    _max_prints: int = 5
+
+    # configure logger for this locustfile
+    logger = logging.getLogger("locustfile")
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s [%(levelname)s] locust: %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
     def on_start(self):
         if not self.data:
@@ -108,5 +123,26 @@ class PredictUser(HttpUser):
             payload[key] = v
 
         headers = {"Content-Type": "application/json"}
-        # Use a named endpoint so results aggregate under a single label in Locust
-        self.client.post("/predict", json=payload, headers=headers, name="/predict")
+
+        # Print/Log the first few payloads to help debug 4xx errors
+        with self._print_lock:
+            if self._sent_counter < self._max_prints:
+                self.logger.info("Sending payload #%d: %s", self._sent_counter + 1, json.dumps(payload))
+            self._sent_counter += 1
+
+        # Use catch_response to inspect server response and log on failures
+        with self.client.post("/predict", json=payload, headers=headers, name="/predict", catch_response=True) as resp:
+            try:
+                status = resp.status_code
+            except Exception:
+                status = None
+
+            if status is None or status >= 400:
+                # log full payload and response body for debugging
+                try:
+                    body_text = resp.text
+                except Exception:
+                    body_text = "<no response body>"
+                self.logger.error("Request failed (status=%s). Payload: %s Response: %s", status, json.dumps(payload), body_text)
+                # mark as failure so Locust records it
+                resp.failure(f"HTTP {status}")

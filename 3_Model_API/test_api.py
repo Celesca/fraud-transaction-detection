@@ -23,7 +23,6 @@ def test_predict_legitimate():
     """Test prediction with a legitimate transaction"""
     print("\n2️⃣  Testing POST /predict (legitimate transaction)...")
     transaction = {
-        "transaction_id": "txn_test_001",
         "time_ind": datetime.now().isoformat(),
         "src_acc": "acc_alice",
         "dst_acc": "acc_bob",
@@ -45,7 +44,6 @@ def test_predict_fraudulent():
     """Test prediction with a suspicious transaction"""
     print("\n3️⃣  Testing POST /predict (suspicious transaction)...")
     transaction = {
-        "transaction_id": "txn_test_002",
         "time_ind": datetime.now().isoformat(),
         "src_acc": "acc_charlie",
         "dst_acc": "acc_unknown",

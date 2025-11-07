@@ -78,8 +78,11 @@ async def predict_fraud(transaction: Transaction):
         artifacts = getattr(app.state, "artifacts", None)
         model: FraudDetectionModel = getattr(app.state, "model")
 
-        logger.info("Received transaction for prediction: transaction_id=%s dst_acc=%s amount=%s",
-                    transaction.transaction_id, transaction.dst_acc, transaction.amount)
+        logger.info(
+            "Received transaction for prediction: dst_acc=%s amount=%s",
+            transaction.dst_acc,
+            transaction.amount,
+        )
 
         # Transform incoming transaction to model-ready features (DataFrame)
         features_df = preprocessing.transform_transaction(transaction.dict(), artifacts)
@@ -92,14 +95,11 @@ async def predict_fraud(transaction: Transaction):
         # Persist if fraud
         if is_fraud:
             db.save_fraud_to_db(transaction.dict(), fraud_probability, prediction_time)
-            logger.info("Persisted fraud: transaction_id=%s prob=%.4f",
-                        transaction.transaction_id, fraud_probability)
+            logger.info("Persisted fraud record with prob=%.4f", fraud_probability)
 
-        logger.info("Prediction result: transaction_id=%s is_fraud=%s prob=%.4f",
-                    transaction.transaction_id, is_fraud, fraud_probability)
+        logger.info("Prediction result: is_fraud=%s prob=%.4f", is_fraud, fraud_probability)
 
         return PredictionResponse(
-            transaction_id=transaction.transaction_id,
             is_fraud=is_fraud,
             fraud_probability=round(fraud_probability, 4),
             prediction_time=prediction_time,
