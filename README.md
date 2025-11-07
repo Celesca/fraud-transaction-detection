@@ -1,5 +1,9 @@
 # SCB Cooperative Internship 2026 Take-Home Test: Fraudulent Transaction Detection
 
+<div class="display: flex; justify-content: center;">
+  <img height="100" alt="image" src="https://github.com/user-attachments/assets/a852942c-55f5-44dd-8a7f-a192c28173eb" />
+</div>
+
 by Sawit Koseeyaumporn
 
 ## Project Overview
@@ -165,6 +169,7 @@ cd 3_Model_API
 
 ### 4. System Architecture Design
 
+<img width="773" height="610" alt="kafka_architecture drawio" src="https://github.com/user-attachments/assets/dd7bc13c-97eb-4555-ab72-cc30824391d3" />
 
 
 ## 📝 Additional Resources
