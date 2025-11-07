@@ -27,6 +27,18 @@ class Transaction(BaseModel):
     dst_bal: Optional[float] = Field(None, description="Destination account balance before transaction")
     dst_new_bal: Optional[float] = Field(None, description="Destination account balance after transaction")
 
+    class Config:
+        schema_extra = {
+            "example": {
+                "transac_type": "CASH_OUT",
+                "amount": 181.00,
+                "src_bal": 181.0,
+                "src_new_bal": 0,
+                "dst_bal": 21182.0,
+                "dst_new_bal": 0
+            }
+        }
+
 
 class PredictionResponse(BaseModel):
     is_fraud: bool = Field(..., description="Fraud prediction (True/False)")
