@@ -2,6 +2,23 @@
 
 A FastAPI-based REST API service for real-time fraud detection in financial transactions.
 
+
+## 🧪 Testing
+
+### Unit Tests
+Run the API test suite:
+```bash
+cd 3_Model_API
+python test_api.py
+```
+
+### Load Testing
+Run Locust to simulate concurrent users:
+```bash
+cd scb-fraud-detection
+locust -f 3_Model_API/tests/locustfile.py --host=http://localhost:8000
+```
+
 ## 📋 Features
 
 - **POST /predict**: Accept a transaction and return fraud prediction with probability score

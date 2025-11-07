@@ -11,7 +11,7 @@ This fraud detection system provides end-to-end capabilities for:
 - **Part 3 : Model Serving predictions** via a FastAPI REST API with real-time inference
 - **Part 4 : System Architecture Design**
 
---
+---
 
 
 ## 📂 Project Structure
@@ -53,6 +53,7 @@ In the part 3 you can folllow instructions inside the folder `3_Model_API` inste
 
 - **Python 3.11** (recommended)
 - **pip** (Python package installer)
+- **Google Colab** (recommended)
 - **Virtual environment** support
 
 ### Step 1: Clone the Repository
@@ -62,7 +63,18 @@ git clone https://github.com/Celesca/fraud-transaction-detection.git
 cd fraud-transaction-detection
 ```
 
-### Step 2: Set Up Python Virtual Environment
+### Step 2 : Download the datasets
+
+GitHub cannot includes the data because the file is too large. So we need to download manually and place it in `data/fraud_mock.csv` instead
+
+Dataset Link : https://scbpocseasta001stdsbx.z23.web.core.windows.net/
+
+
+### Step 2.5 (Optional): Download the `jupyter notebook (Part1, 2)`, datasets and `requirements.txt` then upload to Google Colab session or Kaggle session (Python 3.11 to run PyCaret)
+
+I encouraged you to use the Google Colab or Kaggle to run the jupyter notebook because it's easy to handles with the environments but you can also use the local computer to run.
+
+### Step 3: Set Up Python Virtual Environment
 
 **Windows (Command Prompt):**
 ```cmd
@@ -84,7 +96,7 @@ source .venv/bin/activate
 
 You should see `(.venv)` prefix in your terminal.
 
-### Step 3: Install Dependencies
+### Step 4: Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -94,11 +106,6 @@ This installs all packages needed for the Jupyter notebooks (pandas, scikit-lear
 
 ---
 
-### Step 4 : Download the datasets
-
-GitHub cannot includes the data because the file is too large. So we need to download manually and place it in `data/fraud_mock.csv` instead
-
-Dataset Link : https://scbpocseasta001stdsbx.z23.web.core.windows.net/
 
 
 ## 📊 Workflow
@@ -156,69 +163,6 @@ Navigate to the API folder and follow the detailed setup instructions:
 cd 3_Model_API
 ```
 
-Refer to the **[API README](3_Model_API/README.md)** for:
-- Installing API dependencies (`requirements.txt`)
-- Running the FastAPI server
-- Testing endpoints
-- Load testing with Locust
-- Production deployment
-
-**Quick start:**
-```bash
-cd 3_Model_API
-pip install -r requirements.txt
-python server.py
-```
-
-The API will be available at http://localhost:8000 with interactive docs at http://localhost:8000/docs
-
----
-
-## ✨ Features
-
-### Data Analysis
-- Comprehensive EDA with visualizations
-- Statistical analysis of fraud patterns
-- Feature correlation and importance analysis
-
-### Machine Learning
-- XGBoost classification model
-- Custom preprocessing pipeline
-- Artifact persistence for reproducibility
-
-### API Service
-- **POST /predict** - Real-time fraud detection
-- **GET /frauds** - Retrieve all detected fraud cases
-- **DELETE /frauds** - Clear fraud records
-- **Interactive API docs** - Swagger UI at `/docs`
-- **Business logic** - Automatic non-fraud classification for low-risk transaction types (PAYMENT, CASH_IN, DEBIT)
-- **Model-based prediction** - Uses trained XGBoost for high-risk types (CASH_OUT, TRANSFER)
-- **Database persistence** - SQLite storage for fraud records
-- **Load testing** - Locust-based performance testing
-
----
-
-## 🛠️ Technologies Used
-
-### Data Science & ML
-- **Python 3.11**
-- **Pandas** - Data manipulation
-- **NumPy** - Numerical computing
-- **Scikit-learn** - Preprocessing and evaluation
-- **XGBoost** - Gradient boosting classifier
-- **Matplotlib / Seaborn** - Data visualization
-- **Jupyter Notebook** - Interactive development
-
-### API & Infrastructure
-- **FastAPI** - Modern web framework
-- **Pydantic** - Data validation
-- **Uvicorn** - ASGI server
-- **SQLite** - Lightweight database
-- **Joblib** - Model serialization
-- **Locust** - Load testing
-
----
-
 ## 📝 Additional Resources
 
 - **[API Documentation](3_Model_API/README.md)** - Detailed API setup and usage
@@ -227,41 +171,9 @@ The API will be available at http://localhost:8000 with interactive docs at http
 
 ---
 
-## 🧪 Testing
-
-### Unit Tests
-Run the API test suite:
-```bash
-cd 3_Model_API
-python test_api.py
-```
-
-### Load Testing
-Run Locust to simulate concurrent users:
-```bash
-cd scb-fraud-detection
-locust -f 3_Model_API/tests/locustfile.py --host=http://localhost:8000
-```
-
-Open http://localhost:8089 to configure and start the load test.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Please follow these steps:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
 ## 📄 License
 
-This project is part of an internship assignment. Please contact the repository owner for usage permissions.
+This project is part of an SCB Cooperative Internship 2026 assignment. Please contact the repository owner for usage permissions.
 
 ---
 
