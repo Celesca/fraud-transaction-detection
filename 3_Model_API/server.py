@@ -87,8 +87,28 @@ async def predict_fraud(transaction: Transaction):
         # Transform incoming transaction to model-ready features (DataFrame)
         features_df = preprocessing.transform_transaction(transaction.dict(), artifacts)
 
-        # Model inference: model.predict accepts DataFrame or dict
-        is_fraud, fraud_probability = model.predict(features_df)
+        # Short-circuit: if the transaction type is not one of the two
+        # high-risk channels we care about (CASH_OUT, TRANSFER), skip the model
+        # and immediately mark as non-fraudulent.
+        try:
+            tt = getattr(transaction, "transac_type", None)
+            if tt is None:
+                tt_val = None
+            else:
+                # handle Enum members
+                tt_val = getattr(tt, "value", None) or str(tt)
+            if isinstance(tt_val, str):
+                tt_val = tt_val.strip().upper()
+        except Exception:
+            tt_val = None
+
+        if tt_val not in ("CASH_OUT", "TRANSFER"):
+            logger.info("Transaction transac_type=%s not high-risk; skipping model (marking not fraud)", tt_val)
+            is_fraud = False
+            fraud_probability = 0.0
+        else:
+            # Model inference: model.predict accepts DataFrame or dict
+            is_fraud, fraud_probability = model.predict(features_df)
 
         prediction_time = datetime.utcnow().isoformat()
 
