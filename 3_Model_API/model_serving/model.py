@@ -4,6 +4,9 @@ import os
 import joblib
 import pandas as pd
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class FraudDetectionModel:
@@ -57,10 +60,12 @@ class FraudDetectionModel:
         Tries the loaded model (if any). Falls back to a simple heuristic if no
         model is available or an error occurs.
         """
-        # If no model loaded: fallback heuristic
+        # Require a loaded model — do not fall back to a heuristic anymore.
         if self.model is None:
-            return self._heuristic_predict(features)
+            raise RuntimeError("No model loaded")
 
+        # Log that model-based prediction will run (only when a model is present)
+        logger.debug("Running model-based prediction")
         try:
             df = self._to_dataframe(features)
 
@@ -97,20 +102,12 @@ class FraudDetectionModel:
             return self._heuristic_predict(features)
 
         except Exception:
-            # Do not crash the API on model errors; fall back to heuristic
-            return self._heuristic_predict(features)
+            # Log the exception and re-raise so the API surface returns an error.
+            logging.getLogger(__name__).exception("Model prediction failed")
+            raise
 
-    def _heuristic_predict(self, features: Dict[str, Any]) -> Tuple[bool, float]:
-        """Original amount-based heuristic used as a safe fallback."""
-        amount = features.get("amount")
-        try:
-            amount = float(amount)
-        except Exception:
-            amount = 0.0
-
-        prob = min(amount / 10000.0, 0.99) if amount and amount > 0 else 0.01
-        is_fraud = prob >= 0.5
-        return bool(is_fraud), float(prob)
+    # Heuristic fallback removed by design. If no model is loaded or prediction
+    # fails an exception will be raised so the calling service can handle it.
 
     def predict_from_transaction(self, transaction: BaseModel) -> Tuple[bool, float]:
         """Helper to accept a pydantic transaction model or raw dict."""
