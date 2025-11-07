@@ -1,275 +1,135 @@
-"""
-FastAPI Fraud Detection Service
-Endpoints:
-  POST /predict - Accept transaction and return fraud prediction
-  GET /frauds - Retrieve all transactions predicted as fraudulent
-"""
-
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List
 from datetime import datetime
-import sqlite3
-import json
 import os
+import logging
 
-# Initialize FastAPI app
+from schemas import Transaction, PredictionResponse, FraudTransaction
+import db
+from model import FraudDetectionModel
+import preprocessing
+
+
 app = FastAPI(
     title="Fraud Detection API",
     description="REST API for real-time fraud detection and fraud transaction retrieval",
-    version="1.0.0"
+    version="1.0.0",
 )
 
-# Database configuration
+# Configure a module logger
+logger = logging.getLogger("fraud_api")
+if not logger.handlers:
+    # simple console handler if not configured by uvicorn
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+
 DB_PATH = os.path.join(os.path.dirname(__file__), "frauds.db")
-
-
-# ============================================================================
-# Pydantic Models (Request/Response Schemas)
-# ============================================================================
-
-class Transaction(BaseModel):
-    """
-    Input schema for a single transaction.
-    Adjust fields to match your actual dataset columns.
-    """
-    transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
-    time_ind: str = Field(..., description="Transaction timestamp or time index")
-    src_acc: str = Field(..., description="Source account identifier")
-    dst_acc: str = Field(..., description="Destination account identifier")
-    amount: float = Field(..., gt=0, description="Transaction amount")
-    # Add any other features your model requires (e.g., merchant_id, device_id, etc.)
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "transaction_id": "txn_12345",
-                "time_ind": "2025-11-07T10:30:00",
-                "src_acc": "acc_001",
-                "dst_acc": "acc_999",
-                "amount": 1500.50
-            }
-        }
-
-
-class PredictionResponse(BaseModel):
-    """Response schema for /predict endpoint"""
-    transaction_id: Optional[str]
-    is_fraud: bool = Field(..., description="Fraud prediction (True/False)")
-    fraud_probability: float = Field(..., ge=0.0, le=1.0, description="Fraud probability score")
-    prediction_time: str = Field(..., description="ISO timestamp of prediction")
-    
-    class Config:
-        schema_extra = {
-            "example": {
-                "transaction_id": "txn_12345",
-                "is_fraud": True,
-                "fraud_probability": 0.87,
-                "prediction_time": "2025-11-07T10:30:15"
-            }
-        }
-
-
-class FraudTransaction(BaseModel):
-    """Schema for stored fraud transactions"""
-    id: int
-    transaction_id: Optional[str]
-    transaction_data: dict
-    fraud_probability: float
-    prediction_time: str
-
-
-# ============================================================================
-# Database Functions
-# ============================================================================
-
-def init_db():
-    """Initialize SQLite database and create frauds table if not exists"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS frauds (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            transaction_id TEXT,
-            transaction_data TEXT,
-            fraud_probability REAL,
-            prediction_time TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
-
-
-def save_fraud_to_db(transaction: Transaction, probability: float, prediction_time: str):
-    """Save a fraudulent transaction to the database"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("""
-        INSERT INTO frauds (transaction_id, transaction_data, fraud_probability, prediction_time)
-        VALUES (?, ?, ?, ?)
-    """, (
-        transaction.transaction_id,
-        json.dumps(transaction.dict()),
-        probability,
-        prediction_time
-    ))
-    conn.commit()
-    conn.close()
-
-
-def get_all_frauds() -> List[FraudTransaction]:
-    """Retrieve all fraudulent transactions from the database"""
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, transaction_id, transaction_data, fraud_probability, prediction_time FROM frauds")
-    rows = cursor.fetchall()
-    conn.close()
-    
-    frauds = []
-    for row in rows:
-        frauds.append(FraudTransaction(
-            id=row[0],
-            transaction_id=row[1],
-            transaction_data=json.loads(row[2]),
-            fraud_probability=row[3],
-            prediction_time=row[4]
-        ))
-    return frauds
-
-
-# ============================================================================
-# Model Placeholder (Replace with your trained model)
-# ============================================================================
-
-class FraudDetectionModel:
-    """
-    Mock fraud detection model.
-    Replace this with your actual trained model (e.g., scikit-learn, XGBoost, TensorFlow).
-    """
-    
-    def __init__(self):
-        # TODO: Load your trained model here
-        # Example: self.model = joblib.load('path/to/model.pkl')
-        self.model = None
-        print("⚠️  Mock model loaded. Replace with actual trained model.")
-    
-    def predict(self, transaction: Transaction) -> tuple[bool, float]:
-        """
-        Predict fraud for a given transaction.
-        
-        Args:
-            transaction: Transaction object with features
-            
-        Returns:
-            (is_fraud: bool, probability: float)
-        """
-        # TODO: Replace this mock logic with actual model inference
-        # Example:
-        # features = self._extract_features(transaction)
-        # prob = self.model.predict_proba(features)[0][1]
-        # is_fraud = prob >= 0.5
-        # return is_fraud, prob
-        
-        # Mock logic: flag as fraud if amount > 5000
-        mock_probability = min(transaction.amount / 10000, 0.99)
-        is_fraud = mock_probability >= 0.5
-        
-        return is_fraud, mock_probability
-    
-    def _extract_features(self, transaction: Transaction):
-        """
-        Extract and transform features for model input.
-        TODO: Implement your feature engineering pipeline here.
-        """
-        # Example feature extraction:
-        # - Parse time_ind to datetime features (hour, day_of_week, etc.)
-        # - Encode categorical variables (src_acc, dst_acc)
-        # - Apply scaling/normalization
-        # - Return feature vector in the format your model expects
-        pass
-
-
-# Initialize model (global instance)
-model = FraudDetectionModel()
-
-
-# ============================================================================
-# API Endpoints
-# ============================================================================
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize database on application startup"""
-    init_db()
-    print("✅ Database initialized")
-    print(f"📂 Database path: {DB_PATH}")
+    """Initialize database, load preprocessing artifacts and the model on startup."""
+    # Initialize DB
+    try:
+        db.init_db()
+        logger.info("Database initialized at %s", DB_PATH)
+    except Exception:
+        logger.exception("Failed to initialize database")
+
+    # Load preprocessing artifacts (may be None if not present)
+    try:
+        artifacts = preprocessing.load_preprocessing_artifacts()
+        logger.info("Preprocessing artifacts loaded: %s", "yes" if artifacts else "no")
+    except Exception:
+        artifacts = None
+        logger.exception("Failed to load preprocessing artifacts")
+
+    # Instantiate model (constructor may auto-load default path)
+    model = FraudDetectionModel()
+    # If model not loaded, try explicit load to capture errors in logs
+    if model.model is None and model.model_path:
+        try:
+            model.load(model.model_path)
+            logger.info("Model loaded from %s", model.model_path)
+        except Exception:
+            logger.exception("Failed to load model from %s", model.model_path)
+    else:
+        logger.info("Model loaded: %s", "yes" if model.model is not None else "no")
+
+    # Attach to app.state for handlers to access
+    app.state.artifacts = artifacts
+    app.state.model = model
 
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
     return {
         "message": "Fraud Detection API is running",
         "version": "1.0.0",
-        "endpoints": [
-            "POST /predict - Predict fraud for a transaction",
-            "GET /frauds - Retrieve all fraudulent transactions",
-            "GET /docs - Interactive API documentation"
-        ]
+        "endpoints": ["POST /predict", "GET /frauds", "DELETE /frauds", "GET /docs"],
     }
 
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict_fraud(transaction: Transaction):
-    """
-    Predict whether a transaction is fraudulent.
-    
-    Args:
-        transaction: Transaction data with required features
-        
-    Returns:
-        PredictionResponse with fraud prediction and probability
-    """
     try:
-        # Get prediction from model
-        is_fraud, fraud_probability = model.predict(transaction)
-        
-        # Current timestamp
+        artifacts = getattr(app.state, "artifacts", None)
+        model: FraudDetectionModel = getattr(app.state, "model")
+
+        logger.info("Received transaction for prediction: transaction_id=%s dst_acc=%s amount=%s",
+                    transaction.transaction_id, transaction.dst_acc, transaction.amount)
+
+        # Transform incoming transaction to model-ready features (DataFrame)
+        features_df = preprocessing.transform_transaction(transaction.dict(), artifacts)
+
+        # Model inference: model.predict accepts DataFrame or dict
+        is_fraud, fraud_probability = model.predict(features_df)
+
         prediction_time = datetime.utcnow().isoformat()
-        
-        # If fraud detected, save to database
+
+        # Persist if fraud
         if is_fraud:
-            save_fraud_to_db(transaction, fraud_probability, prediction_time)
-        
+            db.save_fraud_to_db(transaction.dict(), fraud_probability, prediction_time)
+            logger.info("Persisted fraud: transaction_id=%s prob=%.4f",
+                        transaction.transaction_id, fraud_probability)
+
+        logger.info("Prediction result: transaction_id=%s is_fraud=%s prob=%.4f",
+                    transaction.transaction_id, is_fraud, fraud_probability)
+
         return PredictionResponse(
             transaction_id=transaction.transaction_id,
             is_fraud=is_fraud,
             fraud_probability=round(fraud_probability, 4),
-            prediction_time=prediction_time
+            prediction_time=prediction_time,
         )
-    
+
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Prediction error: {e}")
 
 
 @app.get("/frauds", response_model=List[FraudTransaction])
 async def get_frauds():
-    """
-    Retrieve all transactions that were predicted as fraudulent.
-    
-    Returns:
-        List of fraudulent transactions with prediction details
-    """
     try:
-        frauds = get_all_frauds()
-        return frauds
-    
+        records = db.get_all_frauds()
+        return [FraudTransaction(**r) for r in records]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
 
-# ============================================================================
-# Run Instructions (for development only)
-# ============================================================================
+
+@app.delete("/frauds")
+async def clear_frauds():
+    try:
+        deleted = db.clear_frauds()
+        return {"message": f"Deleted {deleted} fraud records"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
 if __name__ == "__main__":
     import uvicorn
+
+    logger.info("Starting uvicorn server on 0.0.0.0:8000")
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
