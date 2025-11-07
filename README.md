@@ -1,46 +1,18 @@
-# Fraud Detection System
+# SCB Cooperative Internship 2026 Take-Home Test: Fraudulent Transaction Detection
 
-A comprehensive machine learning solution for detecting fraudulent financial transactions in real-time. This project includes exploratory data analysis, model training, and a production-ready REST API service.
+by Sawit Koseeyaumporn
 
----
-
-## 📋 Table of Contents
-
-- [Project Overview](#project-overview)
-- [System Architecture](#system-architecture)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Workflow](#workflow)
-- [Features](#features)
-- [Technologies Used](#technologies-used)
-- [Contributing](#contributing)
-
----
-
-## 🎯 Project Overview
+## Project Overview
 
 This fraud detection system provides end-to-end capabilities for:
 
-- **Data exploration and analysis** of financial transaction patterns
-- **Training machine learning models** to detect fraudulent transactions
-- **Serving predictions** via a FastAPI REST API with real-time inference
-- **Persistent storage** of detected fraud cases for audit and analysis
+- **Part 1 : Data exploration and analysis (EDA)** of financial transaction patterns
+- **Part 2 : Training machine learning models** to detect fraudulent transactions
+- **Part 3 : Model Serving predictions** via a FastAPI REST API with real-time inference
+- **Part 4 : System Architecture Design**
 
-The system focuses on high-risk transaction types (CASH_OUT and TRANSFER) and uses XGBoost for fraud classification.
+--
 
----
-
-## 🏗️ System Architecture
-
-![System Architecture](system_architecture.png)
-
-The architecture consists of three main components:
-
-1. **Data Analysis Layer** - Jupyter notebooks for EDA and feature engineering
-2. **Model Training Layer** - ML pipeline for training and evaluating fraud detection models
-3. **API Serving Layer** - FastAPI service for real-time predictions with SQLite persistence
-
----
 
 ## 📂 Project Structure
 
@@ -68,12 +40,14 @@ scb-fraud-detection/
 │   └── tests/
 │       ├── locustfile.py                    # Load testing script
 │       └── test.md                          # Test examples
-└── system_architecture.png                  # Architecture diagram
+└── 4_System_Architecture_Design.png         # Architecture diagram
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started (For Part 1, 2)
+
+In the part 3 you can folllow instructions inside the folder `3_Model_API` instead.
 
 ### Prerequisites
 
@@ -119,6 +93,13 @@ pip install -r requirements.txt
 This installs all packages needed for the Jupyter notebooks (pandas, scikit-learn, xgboost, matplotlib, seaborn, etc.).
 
 ---
+
+### Step 4 : Download the datasets
+
+GitHub cannot includes the data because the file is too large. So we need to download manually and place it in `data/fraud_mock.csv` instead
+
+Dataset Link : https://scbpocseasta001stdsbx.z23.web.core.windows.net/
+
 
 ## 📊 Workflow
 
@@ -296,14 +277,5 @@ This project is part of an internship assignment. Please contact the repository 
 - Dataset source and domain expertise providers
 - Open-source community for the amazing tools and libraries
 
----
-
-## 📞 Support
-
-For questions or issues:
-- Open an issue on GitHub
-- Contact the development team
-
----
 
 **Last Updated:** November 7, 2025
