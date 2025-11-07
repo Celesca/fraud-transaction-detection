@@ -3,9 +3,9 @@ from typing import Dict, Any, Optional
 
 import pandas as pd
 import joblib
+from .schemas import TRANSAC_TYPE
 
-# Allowed transaction types (must match schemas.TransacType)
-ALLOWED_TRANSAC_TYPES = ["CASH_OUT", "PAYMENT", "CASH_IN", "TRANSFER", "DEBIT"]
+# Canonical list of allowed transaction types (used for validation and categorical ordering)
 
 def parse_time_features(time_ind: str) -> Dict[str, Any]:
     try:
@@ -42,7 +42,7 @@ def transform_transaction(transaction: Dict[str, Any], artifacts: Optional[Dict[
     tt = transaction.get("transac_type")
     if tt is not None:
         tt_norm = str(tt).strip().upper()
-        if tt_norm not in ALLOWED_TRANSAC_TYPES:
+        if tt_norm not in TRANSAC_TYPE.__members__:
             raise ValueError(f"Invalid transac_type '{tt}'; allowed: {ALLOWED_TRANSAC_TYPES}")
         transaction["transac_type"] = tt_norm
 

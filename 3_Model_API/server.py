@@ -9,7 +9,6 @@ import model_serving.db as db
 from model_serving.model import FraudDetectionModel
 import model_serving.preprocessing as preprocessing
 
-
 app = FastAPI(
     title="Fraud Detection API",
     description="REST API for real-time fraud detection and fraud transaction retrieval",
