@@ -4,6 +4,9 @@ from typing import Dict, Any, Optional
 import pandas as pd
 import joblib
 
+# Allowed transaction types (must match schemas.TransacType)
+ALLOWED_TRANSAC_TYPES = ["CASH_OUT", "PAYMENT", "CASH_IN", "TRANSFER", "DEBIT"]
+
 def parse_time_features(time_ind: str) -> Dict[str, Any]:
     try:
         dt = datetime.fromisoformat(time_ind)
@@ -35,10 +38,22 @@ def transform_transaction(transaction: Dict[str, Any], artifacts: Optional[Dict[
     ]
 
     # Build initial df from transaction dict
+    # Normalize transac_type to uppercase and validate
+    tt = transaction.get("transac_type")
+    if tt is not None:
+        tt_norm = str(tt).strip().upper()
+        if tt_norm not in ALLOWED_TRANSAC_TYPES:
+            raise ValueError(f"Invalid transac_type '{tt}'; allowed: {ALLOWED_TRANSAC_TYPES}")
+        transaction["transac_type"] = tt_norm
+
     row = {k: transaction.get(k, None) for k in relevant_features}
     df = pd.DataFrame([row])
 
-    # One-hot encode transac_type
+    # Ensure transac_type uses the canonical categories so dummies are consistent
+    if "transac_type" in df.columns:
+        df["transac_type"] = pd.Categorical(df["transac_type"], categories=ALLOWED_TRANSAC_TYPES)
+
+    # One-hot encode transac_type (drop_first=True matches training notebook)
     df = pd.get_dummies(df, columns=["transac_type"], drop_first=True)
 
     # Align columns to training columns 

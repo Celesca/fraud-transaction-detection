@@ -1,12 +1,13 @@
 """Pydantic schemas for API requests and responses."""
+from enum import Enum
 from pydantic import BaseModel, Field
 from typing import Optional, Dict
-
+from enum import TransacType
 
 class Transaction(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Unique transaction identifier")
     time_ind: str = Field(..., description="Transaction timestamp or time index")
-    transac_type: str = Field(..., description="Transaction type / channel (e.g. transfer, payment)")
+    transac_type: TransacType = Field(..., description="Transaction type / channel")
     amount: float = Field(..., gt=0, description="Transaction amount")
     src_acc: str = Field(..., description="Source account identifier")
     src_bal: Optional[float] = Field(None, description="Source account balance before transaction")

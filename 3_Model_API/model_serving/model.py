@@ -1,10 +1,3 @@
-"""Model wrapper for fraud prediction.
-Loads a joblib-serialized model (XGBoost/sklearn) by default from
-`models/xgb_model.joblib` and exposes a unified predict interface.
-
-The wrapper is defensive: if loading fails it falls back to the
-existing simple amount-based heuristic so the API remains usable.
-"""
 from typing import Tuple, Dict, Any, Optional
 from pydantic import BaseModel
 import os
@@ -80,9 +73,8 @@ class FraudDetectionModel:
                 is_fraud = prob >= 0.5
                 return bool(is_fraud), float(prob)
 
-            # xgboost native Booster
             if self._is_xgb_booster:
-                import xgboost as xgb  # type: ignore
+                import xgboost as xgb 
 
                 dmat = xgb.DMatrix(df.values, feature_names=list(df.columns))
                 preds = self.model.predict(dmat)
@@ -102,7 +94,6 @@ class FraudDetectionModel:
                 is_fraud = prob >= 0.5
                 return bool(is_fraud), float(prob)
 
-            # last-resort fallback
             return self._heuristic_predict(features)
 
         except Exception:
