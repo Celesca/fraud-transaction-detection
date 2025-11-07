@@ -4,10 +4,10 @@ from datetime import datetime
 import os
 import logging
 
-from schemas import Transaction, PredictionResponse, FraudTransaction
-import db
-from model import FraudDetectionModel
-import preprocessing
+from model_serving.schemas import Transaction, PredictionResponse, FraudTransaction
+import model_serving.db as db
+from model_serving.model import FraudDetectionModel
+import model_serving.preprocessing as preprocessing
 
 
 app = FastAPI(
@@ -132,4 +132,4 @@ if __name__ == "__main__":
     import uvicorn
 
     logger.info("Starting uvicorn server on 0.0.0.0:8000")
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
