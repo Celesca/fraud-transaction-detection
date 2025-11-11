@@ -42,6 +42,45 @@ docker-compose down
 
 Then your server should be ready to use now at port 8000 (localhost:8000)
 
+### ⚠️ Important: Model Artifacts Required
+
+The API requires pre-trained model files to run predictions. These files must be present in the `models/` directory:
+
+```
+models/
+├── xgb_model.joblib                # Trained XGBoost model
+├── preprocessing_artifacts.joblib  # Feature scaler and metadata
+├── train_cols.json                 # Training column order
+└── xgb_model.json                  # XGBoost metadata
+```
+
+**If model files are missing**, you'll see this error:
+```
+FileNotFoundError: [Errno 2] No such file or directory: 'models/xgb_model.joblib'
+```
+
+**To generate model artifacts:**
+
+1. Ensure the training notebook has been run:
+   ```bash
+   cd scb-fraud-detection
+   jupyter notebook 2_Model_Training.ipynb
+   ```
+
+2. The notebook will automatically save artifacts to `3_Model_API/models/`
+
+3. Rebuild and restart Docker:
+   ```bash
+   cd 3_Model_API
+   docker-compose down
+   docker-compose up --build
+   ```
+
+**To test without a trained model** (development only):
+- Skip Docker and run locally with `python server.py`
+- The API will fail gracefully with "No model loaded" error for predictions
+- Use this to verify API infrastructure while training your model
+
 ---
 
 ## 📋 Features
