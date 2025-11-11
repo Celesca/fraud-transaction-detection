@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Dict, Any, Optional
+import os
 
 import pandas as pd
 import joblib
@@ -17,7 +18,12 @@ def parse_time_features(time_ind: str) -> Dict[str, Any]:
 
     return {"hour": dt.hour, "day_of_week": dt.weekday(), "parsed": True}
 
-def load_preprocessing_artifacts(path: str = "models/preprocessing_artifacts.joblib") -> Optional[Dict[str, Any]]:
+def load_preprocessing_artifacts(path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    # Resolve path relative to this file's directory if not provided
+    if path is None:
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(parent_dir, "models", "preprocessing_artifacts.joblib")
+    
     try:
         artifacts = joblib.load(path)
         return artifacts

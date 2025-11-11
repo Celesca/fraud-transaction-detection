@@ -15,7 +15,13 @@ class FraudDetectionModel:
     By default the constructor will attempt to load `models/xgb_model.joblib`.
     """
 
-    def __init__(self, model_path: Optional[str] = "models/xgb_model.joblib") -> None:
+    def __init__(self, model_path: Optional[str] = None) -> None:
+        # Resolve model path relative to this file's directory
+        if model_path is None:
+            # Default: look for xgb_model.joblib in ../models/ (parent of model_serving/)
+            parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            model_path = os.path.join(parent_dir, "models", "xgb_model.joblib")
+        
         self.model_path = model_path
         self.model = None
         self._has_proba = False

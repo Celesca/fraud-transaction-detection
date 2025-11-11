@@ -4,8 +4,11 @@ __pycache__/
 venv/
 env/
 .env
-models/
+# DO NOT EXCLUDE models/ - needed for model inference
+# models/
 /*.db
 dist/
 build/
 /.git
+tests/
+*.md
