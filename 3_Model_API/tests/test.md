@@ -10,3 +10,9 @@ locust -f tests/locustfile.py --host=http://localhost:8000
   "dst_bal": 21182.0,
   "dst_new_bal": 0
 }
+
+## To-do
+
+* Validation in Rest API
+* Model path fixes
+* Instruction to install more than docker
